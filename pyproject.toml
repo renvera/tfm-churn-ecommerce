@@ -1,0 +1,36 @@
+[project]
+name = "tfm-churn-ecommerce"
+version = "0.1.0"
+description = "Predicción de churn en e-commerce (UCI Online Retail II) con pipeline MLOps y API"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "pandas>=2.2",
+    "numpy>=1.26",
+    "scikit-learn>=1.5",
+    "xgboost>=2.1",
+    "matplotlib>=3.9",
+    "jupyter>=1.0",
+    "shap>=0.46",
+    "fastapi>=0.115",
+    "pydantic>=2.9",
+    "uvicorn[standard]>=0.30",
+    "pytest>=8.3",
+    "openpyxl>=3.1",
+    "pyarrow>=17.0",
+    "ucimlrepo>=0.0.7",
+]
+
+[project.optional-dependencies]
+mlops = ["mlflow>=2.16"]
+dev = ["ruff>=0.6", "black>=24.8", "mypy>=1.11"]
+
+[tool.ruff]
+line-length = 100
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
