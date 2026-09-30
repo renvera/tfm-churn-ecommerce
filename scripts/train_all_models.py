@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd
 from src.models.random_forest import build_random_forest_pipeline
+from src.models.xgboost_model import build_xgboost_pipeline, compute_scale_pos_weight
 from src.data.loader import load_online_retail
 from src.data.cleaning import get_clean_sales
 from src.features.snapshots import generate_snapshot_dates, build_multi_snapshot_dataset
@@ -37,10 +38,14 @@ train, valid, test = temporal_split(
     dataset, date_col="cutoff_date", train_end=train_end, valid_end=valid_end
 )
 
+xgb_weight = compute_scale_pos_weight(train["churn"])
+print(f"scale_pos_weight (train): {xgb_weight:.4f}\n")  
+
 models = {
     "dummy": build_dummy_pipeline(),
     "logistic": build_logistic_pipeline(),
     "random_forest": build_random_forest_pipeline(),
+    "xgboost": build_xgboost_pipeline(scale_pos_weight=xgb_weight),
 }
 
 for model_name, pipeline in models.items():
