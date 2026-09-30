@@ -15,30 +15,7 @@ matplotlib.use("Agg")  # sin ventana: solo guarda a fichero
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import brier_score_loss
-from sklearn.pipeline import Pipeline
-
-
-def build_calibrated_pipeline(
-    estimator: Pipeline,
-    method: str = "sigmoid",
-    cv: int = 5,
-) -> CalibratedClassifierCV:
-    """
-    Envuelve un pipeline ya definido con calibración supervisada.
-
-    La calibración se ajusta exclusivamente con train mediante validación
-    cruzada interna. Así se generan predicciones out-of-fold para aprender
-    la transformación de probabilidad sin utilizar validación ni test.
-    ``sigmoid`` (Platt scaling) es la opción conservadora para este tamaño
-    de muestra; ``isotonic`` queda disponible para análisis de sensibilidad.
-    """
-    if method not in {"sigmoid", "isotonic"}:
-        raise ValueError("method debe ser 'sigmoid' o 'isotonic'")
-    if cv < 2:
-        raise ValueError("cv debe ser al menos 2")
-    return CalibratedClassifierCV(estimator=estimator, method=method, cv=cv)
 
 
 def calibration_table(y_true, proba, n_bins: int = 10) -> pd.DataFrame:
@@ -85,18 +62,3 @@ def plot_calibration_curves(
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=150)
     plt.close(fig)
-
-def calibrate_prefit(estimator, method: str = "sigmoid") -> CalibratedClassifierCV:
-    """
-    Recalibra un estimador/pipeline YA ajustado sin reentrenarlo: el modelo
-    base queda congelado y el calibrador se aprende con el conjunto que se
-    pase a ``.fit`` (p. ej. valid).
-    """
-    if method not in {"sigmoid", "isotonic"}:
-        raise ValueError("method debe ser 'sigmoid' o 'isotonic'")
-    try:  # sklearn >= 1.6
-        from sklearn.frozen import FrozenEstimator
-
-        return CalibratedClassifierCV(estimator=FrozenEstimator(estimator), method=method)
-    except ImportError:  # 1.2 <= sklearn < 1.6
-        return CalibratedClassifierCV(estimator=estimator, method=method, cv="prefit")

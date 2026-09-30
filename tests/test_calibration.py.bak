@@ -3,7 +3,6 @@ import pytest
 
 from src.evaluation.calibration import (
     brier,
-    calibrate_prefit,
     calibration_table,
     expected_calibration_error,
 )
@@ -28,19 +27,3 @@ def test_overconfident_probabilities_have_high_ece():
 
 def test_brier_of_perfect_predictions_is_zero():
     assert brier([0, 1], [0.0, 1.0]) == pytest.approx(0.0)
-
-def test_calibrate_prefit_preserves_ranking():
-    """La recalibración es monótona: cambia las probabilidades, no el orden."""
-    import numpy as np
-    from sklearn.linear_model import LogisticRegression
-    from sklearn.metrics import roc_auc_score
-
-    rng = np.random.default_rng(0)
-    X = rng.normal(size=(400, 2))
-    y = (X @ np.array([1.0, -1.0]) + rng.normal(scale=0.5, size=400) > 0).astype(int)
-    model = LogisticRegression().fit(X, y)
-    cal = calibrate_prefit(model, method="sigmoid")
-    cal.fit(X, y)  # mismos datos solo por comodidad en el test
-    p_raw = model.predict_proba(X)[:, 1]
-    p_cal = cal.predict_proba(X)[:, 1]
-    assert abs(roc_auc_score(y, p_raw) - roc_auc_score(y, p_cal)) < 1e-8
