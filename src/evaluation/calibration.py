@@ -24,7 +24,8 @@ def build_calibrated_pipeline(
     estimator: Pipeline,
     method: str = "sigmoid",
     cv: int = 5,
-) -> CalibratedClassifierCV:
+    ensemble: bool = True,
+) -> Pipeline:
     """
     Envuelve un pipeline ya definido con calibración supervisada.
 
@@ -38,7 +39,7 @@ def build_calibrated_pipeline(
         raise ValueError("method debe ser 'sigmoid' o 'isotonic'")
     if cv < 2:
         raise ValueError("cv debe ser al menos 2")
-    return CalibratedClassifierCV(estimator=estimator, method=method, cv=cv)
+    return CalibratedClassifierCV(estimator=estimator, method=method, cv=cv, ensemble=ensemble)
 
 
 def calibration_table(y_true, proba, n_bins: int = 10) -> pd.DataFrame:
