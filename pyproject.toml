@@ -23,6 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 mlops = ["mlflow>=2.16"]
 dev = ["ruff>=0.6", "black>=24.8", "mypy>=1.11"]
+research = ["jupyter>=1.0", "shap>=0.45", "xgboost>=2.0"]
 
 [tool.ruff]
 line-length = 100
@@ -31,6 +32,15 @@ line-length = 100
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.uv]
+package = false
+

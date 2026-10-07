@@ -190,3 +190,4 @@ Resultado: todos los tests pasan (uv run pytest tests/test_cleaning.py -v).
  Incorporar MLflow (una vez exista el baseline).
 
 Última actualización: registro generado tras cerrar el ciclo de carga, limpieza y testing de datos (Paso 0 + auditoría inicial).
+

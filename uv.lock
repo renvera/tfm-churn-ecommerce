@@ -3592,7 +3592,7 @@ wheels = [
 [[package]]
 name = "tfm-churn-ecommerce"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "jupyter" },
@@ -3623,6 +3623,11 @@ mlops = [
     { name = "mlflow" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "httpx" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=24.8" },
@@ -3645,6 +3650,9 @@ requires-dist = [
     { name = "xgboost", specifier = ">=2.1" },
 ]
 provides-extras = ["mlops", "dev"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "httpx", specifier = ">=0.28.1" }]
 
 [[package]]
 name = "threadpoolctl"

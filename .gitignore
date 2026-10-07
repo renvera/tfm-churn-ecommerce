@@ -1,0 +1,78 @@
+# ============================================================
+# .gitignore — tfm-churn-ecommerce
+# Copiar este archivo a la raíz del repositorio como: .gitignore
+# ============================================================
+
+# ── Entorno virtual ─────────────────────────────────────────
+.venv/
+venv/
+.env
+*.env
+
+# ── Datos (nunca versionar el dataset original ni cachés) ───
+data/raw/
+data/interim/
+data/processed/
+
+# ── Modelo serializado (artefacto grande; distribuir aparte) ─
+# Descomentar si se decide NO versionar el .joblib:
+# models/*.joblib
+# models/*.pkl
+# Mantener el metadata JSON (es pequeño y útil para reproducibilidad):
+# models/*.json  ← NO ignorar; contiene métricas y umbral
+
+# ── Python ──────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Jupyter ─────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ── uv / pip ────────────────────────────────────────────────
+# uv.lock se versiona (garantiza reproducibilidad exacta)
+# pyproject.toml se versiona siempre
+.pip-cache/
+pip-wheel-metadata/
+
+# ── Reports / salidas generadas ─────────────────────────────
+reports/figures/
+reports/*.html
+reports/*.png
+reports/*.svg
+# Mantener reports/README.md si existe
+
+# ── Archivos residuales ─────────────────────────────────────
+*.bak
+*.tmp
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# ── IDEs ────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.code-workspace
+
+# ── Paquete residual (borrar src/tfm_churn_ecommerce/) ──────
+src/tfm_churn_ecommerce/
+
+# ── MLflow (si se activa en el futuro) ──────────────────────
+mlruns/
+mlflow.db
+
+# ── Cobertura y testing ─────────────────────────────────────
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
