@@ -36,3 +36,5 @@ mlruns/
 Thumbs.db
 .vscode/
 .idea/
+# Parches generados con git format-patch
+*.patch

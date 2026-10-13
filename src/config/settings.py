@@ -33,7 +33,10 @@ EXPECTED_COLUMNS = {
 # Horizontes de churn a evaluar (en días)
 CHURN_HORIZONS = [60, 90, 120]
 
-# Embargo entre splits temporales (en días). Debe ser >= al horizonte de
-# churn usado en las etiquetas, para que la ventana de etiqueta de un split
-# no solape con el periodo del siguiente.
+# Embargo entre splits temporales (en días) para los análisis de robustez
+# (horizontes, backtest rodante, solapamiento de clientes, devoluciones).
+# Debe ser >= al horizonte de churn, para que la ventana de etiqueta de un
+# split no solape con el periodo del siguiente.
+# El protocolo principal documentado (train_final.py y los scripts de
+# modelado originales) NO usa embargo (gap_days=0): ver README.
 SPLIT_EMBARGO_DAYS = 90

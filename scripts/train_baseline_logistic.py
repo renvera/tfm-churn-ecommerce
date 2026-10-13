@@ -17,7 +17,6 @@ from src.data.loader import load_online_retail
 from src.data.cleaning import get_clean_sales
 from src.features.snapshots import generate_snapshot_dates, build_multi_snapshot_dataset
 from src.splitting.temporal_split import temporal_split
-from src.config.settings import SPLIT_EMBARGO_DAYS
 from src.models.baseline import build_dummy_pipeline, NUMERIC_FEATURES
 from src.models.logistic import build_logistic_pipeline
 from src.evaluation.metrics import evaluate_binary
@@ -35,7 +34,6 @@ train_end = snapshot_dates[12]
 valid_end = snapshot_dates[16]
 train, valid, test = temporal_split(
     dataset, date_col="cutoff_date", train_end=train_end, valid_end=valid_end,
-    gap_days=SPLIT_EMBARGO_DAYS,
 )
 
 models = {
