@@ -3622,6 +3622,13 @@ dev = [
 mlops = [
     { name = "mlflow" },
 ]
+research = [
+    { name = "jupyter" },
+    { name = "shap", version = "0.51.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "shap", version = "0.52.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "xgboost", version = "3.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "xgboost", version = "3.4.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -3633,6 +3640,7 @@ requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=24.8" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "jupyter", specifier = ">=1.0" },
+    { name = "jupyter", marker = "extra == 'research'", specifier = ">=1.0" },
     { name = "matplotlib", specifier = ">=3.9" },
     { name = "mlflow", marker = "extra == 'mlops'", specifier = ">=2.16" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11" },
@@ -3645,11 +3653,13 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
     { name = "scikit-learn", specifier = ">=1.5" },
     { name = "shap", specifier = ">=0.46" },
+    { name = "shap", marker = "extra == 'research'", specifier = ">=0.45" },
     { name = "ucimlrepo", specifier = ">=0.0.7" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
     { name = "xgboost", specifier = ">=2.1" },
+    { name = "xgboost", marker = "extra == 'research'", specifier = ">=2.0" },
 ]
-provides-extras = ["mlops", "dev"]
+provides-extras = ["mlops", "dev", "research"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "httpx", specifier = ">=0.28.1" }]
