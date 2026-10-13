@@ -31,6 +31,7 @@ from src.data.loader import load_online_retail
 from src.data.cleaning import get_clean_sales
 from src.features.snapshots import build_multi_snapshot_dataset, generate_snapshot_dates
 from src.splitting.temporal_split import temporal_split
+from src.config.settings import SPLIT_EMBARGO_DAYS
 from src.models.baseline import NUMERIC_FEATURES
 from src.models.xgboost_model import build_xgboost_pipeline, compute_scale_pos_weight
 
@@ -50,6 +51,7 @@ train, valid, _ = temporal_split(
     date_col="cutoff_date",
     train_end=snapshot_dates[12],
     valid_end=snapshot_dates[16],
+    gap_days=SPLIT_EMBARGO_DAYS,
 )
 X_train, y_train = train[NUMERIC_FEATURES], train["churn"].values
 X_valid, y_valid = valid[NUMERIC_FEATURES], valid["churn"].values

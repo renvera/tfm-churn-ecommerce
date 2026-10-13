@@ -32,3 +32,8 @@ EXPECTED_COLUMNS = {
 
 # Horizontes de churn a evaluar (en días)
 CHURN_HORIZONS = [60, 90, 120]
+
+# Embargo entre splits temporales (en días). Debe ser >= al horizonte de
+# churn usado en las etiquetas, para que la ventana de etiqueta de un split
+# no solape con el periodo del siguiente.
+SPLIT_EMBARGO_DAYS = 90

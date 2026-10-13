@@ -10,6 +10,7 @@ from src.data.loader import load_online_retail
 from src.data.cleaning import get_clean_sales
 from src.features.snapshots import build_multi_snapshot_dataset, generate_snapshot_dates
 from src.splitting.temporal_split import temporal_split
+from src.config.settings import SPLIT_EMBARGO_DAYS
 from src.models.baseline import NUMERIC_FEATURES
 from src.models.logistic import build_logistic_pipeline
 from src.models.random_forest import build_random_forest_pipeline
@@ -40,6 +41,7 @@ train, valid, test = temporal_split(
     date_col="cutoff_date",
     train_end=snapshot_dates[12],
     valid_end=snapshot_dates[16],
+    gap_days=SPLIT_EMBARGO_DAYS,
 )
 splits = {"valid": valid, "test": test}
 y_valid = valid["churn"].values
