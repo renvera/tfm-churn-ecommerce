@@ -53,11 +53,15 @@ def build_multi_snapshot_dataset(
     snapshot_dates: pd.DatetimeIndex,
     horizon_days: int = 90,
     lookback_days: int = 365,
+    cancellations: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """
     Construye el dataset completo cliente + snapshot, iterando sobre
     varias fechas de corte. En cada corte, se queda solo con clientes
     activos en los últimos `lookback_days` días.
+
+    Si se pasa `cancellations`, se añaden las features de devoluciones
+    (ver build_dataset).
 
     Returns
     -------
@@ -74,7 +78,10 @@ def build_multi_snapshot_dataset(
             continue
 
         snapshot_dataset = build_dataset(
-            df_sales, cutoff_date=cutoff, horizon_days=horizon_days
+            df_sales,
+            cutoff_date=cutoff,
+            horizon_days=horizon_days,
+            cancellations=cancellations,
         )
         snapshot_dataset = snapshot_dataset[
             snapshot_dataset["Customer ID"].isin(active_ids)

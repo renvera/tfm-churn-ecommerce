@@ -29,6 +29,13 @@ NUMERIC_FEATURES = [
     "is_post_holiday",
 ]
 
+# Features de devoluciones (src/features/returns.py). Requieren construir el
+# dataset con `cancellations`. Se dejan fuera monetary_net (= monetary -
+# return_amount, combinación lineal exacta de dos features ya presentes) y se
+# mantienen aparte de NUMERIC_FEATURES para no alterar modelos ni API existentes.
+RETURN_FEATURES = ["return_amount", "return_ratio"]
+FEATURES_WITH_RETURNS = NUMERIC_FEATURES + RETURN_FEATURES
+
 
 def build_preprocessing_pipeline(
     numeric_features: list[str] = NUMERIC_FEATURES,

@@ -90,3 +90,25 @@ def test_multi_snapshot_dataset_raises_if_no_active_customers():
         build_multi_snapshot_dataset(
             empty_like, snapshot_dates=snapshot_dates, horizon_days=30
         )
+
+
+def test_multi_snapshot_returns_use_each_snapshot_cutoff(sample_sales):
+    """El mismo cliente ve devoluciones distintas según el corte de cada fila."""
+    canc = pd.DataFrame(
+        [[1, "2011-07-01", -1, 10.0]],
+        columns=["Customer ID", "InvoiceDate", "Quantity", "Price"],
+    )
+    snapshot_dates = pd.DatetimeIndex(
+        [pd.Timestamp("2011-06-15"), pd.Timestamp("2011-07-15")]
+    )
+    dataset = build_multi_snapshot_dataset(
+        sample_sales,
+        snapshot_dates=snapshot_dates,
+        horizon_days=30,
+        lookback_days=365,
+        cancellations=canc,
+    )
+    c1 = dataset[dataset["Customer ID"] == 1].set_index("cutoff_date")
+    assert c1.loc[pd.Timestamp("2011-06-15"), "return_amount"] == pytest.approx(0.0)
+    assert c1.loc[pd.Timestamp("2011-07-15"), "return_amount"] == pytest.approx(10.0)
+    assert (dataset.loc[dataset["Customer ID"] == 2, "return_amount"] == 0).all()

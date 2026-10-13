@@ -12,6 +12,7 @@ from src.features.temporal import add_seasonal_features
 
 import pandas as pd
 
+from src.features.returns import add_return_features
 from src.features.rfm import build_rfm_features
 from src.labeling.churn import build_churn_labels
 
@@ -20,10 +21,16 @@ def build_dataset(
     df_sales: pd.DataFrame,
     cutoff_date: pd.Timestamp,
     horizon_days: int = 90,
+    cancellations: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """
     Construye el dataset cliente + snapshot: features (pasado) unidas
     a la etiqueta de churn (futuro), para una única fecha de corte.
+
+    Si se pasa `cancellations` (ver features.returns.get_cancellations),
+    se añaden return_amount, monetary_net y return_ratio, calculadas solo
+    con cancelaciones hasta cutoff_date. Sin él, el resultado es el mismo
+    de siempre.
 
     Returns
     -------
@@ -50,5 +57,10 @@ def build_dataset(
         )
 
     dataset = add_seasonal_features(dataset, date_col="cutoff_date")
+
+    if cancellations is not None:
+        dataset = add_return_features(
+            dataset, cancellations, date_col="cutoff_date"
+        )
 
     return dataset

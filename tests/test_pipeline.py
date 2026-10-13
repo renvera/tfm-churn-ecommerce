@@ -71,3 +71,62 @@ def test_customer_without_future_purchase_is_churn(sample_sales):
     )
     customer_3 = dataset[dataset["Customer ID"] == 3].iloc[0]
     assert customer_3["churn"] == 1  # no vuelve tras el corte
+
+
+# ---------------------------------------------------------------------------
+# Features de devoluciones (cancellations opcional)
+# ---------------------------------------------------------------------------
+
+CUTOFF = pd.Timestamp("2011-02-05")
+RETURN_COLUMNS = {"return_amount", "monetary_net", "return_ratio"}
+
+
+def _cancellations(rows):
+    return pd.DataFrame(
+        rows, columns=["Customer ID", "InvoiceDate", "Quantity", "Price"]
+    )
+
+
+def test_dataset_without_cancellations_has_no_return_columns(sample_sales):
+    dataset = build_dataset(sample_sales, cutoff_date=CUTOFF, horizon_days=90)
+    assert RETURN_COLUMNS.isdisjoint(dataset.columns)
+
+
+def test_dataset_with_cancellations_adds_return_columns(sample_sales):
+    canc = _cancellations(
+        [
+            [1, "2011-01-20", -2, 5.0],  # antes del corte: 10
+            [2, "2011-03-01", -1, 99.0],  # después del corte: no cuenta
+        ]
+    )
+    dataset = build_dataset(
+        sample_sales, cutoff_date=CUTOFF, horizon_days=90, cancellations=canc
+    )
+    assert RETURN_COLUMNS.issubset(dataset.columns)
+    by_customer = dataset.set_index("Customer ID")
+    assert by_customer.loc[1, "return_amount"] == pytest.approx(10.0)
+    assert by_customer.loc[2, "return_amount"] == pytest.approx(0.0)
+    assert by_customer.loc[3, "return_amount"] == pytest.approx(0.0)
+
+
+def test_cancellations_do_not_change_existing_columns(sample_sales):
+    canc = _cancellations([[1, "2011-01-20", -2, 5.0]])
+    plain = build_dataset(sample_sales, cutoff_date=CUTOFF, horizon_days=90)
+    with_returns = build_dataset(
+        sample_sales, cutoff_date=CUTOFF, horizon_days=90, cancellations=canc
+    )
+    pd.testing.assert_frame_equal(plain, with_returns[plain.columns])
+
+
+def test_future_cancellation_does_not_change_dataset(sample_sales):
+    past = _cancellations([[1, "2011-01-20", -2, 5.0]])
+    with_future = _cancellations(
+        [[1, "2011-01-20", -2, 5.0], [1, "2011-02-10", -50, 20.0]]
+    )
+    a = build_dataset(
+        sample_sales, cutoff_date=CUTOFF, horizon_days=90, cancellations=past
+    )
+    b = build_dataset(
+        sample_sales, cutoff_date=CUTOFF, horizon_days=90, cancellations=with_future
+    )
+    pd.testing.assert_frame_equal(a, b)
