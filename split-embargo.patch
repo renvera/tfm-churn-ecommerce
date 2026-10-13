@@ -1,0 +1,396 @@
+From 1cfe26594cd28bb74794492240ce6809f48dedb9 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 13 Oct 2026 12:06:50 +0200
+Subject: [PATCH] =?UTF-8?q?A=C3=B1adir=20embargo=20(gap=5Fdays)=20al=20spl?=
+ =?UTF-8?q?it=20temporal?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+temporal_split acepta gap_days (por defecto 0, comportamiento anterior).
+Con gap_days >= horizonte de churn, la ventana de etiqueta de cada split
+no solapa con el periodo del siguiente. Se añade SPLIT_EMBARGO_DAYS = 90
+en settings y se aplica en los scripts que usan el split. Incluye tests
+del embargo, del límite exacto en T + horizonte y de los errores.
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01XQtEVuNw73A7ASsLVJH5Ah
+---
+ scripts/analisis_wholesale.py      |   2 +
+ scripts/analyze_shap.py            |   2 +
+ scripts/control_cv_shuffle.py      |   2 +
+ scripts/diagnostico_xgboost.py     |   2 +
+ scripts/evaluate_thresholds.py     |   2 +
+ scripts/train_all_models.py        |   4 +-
+ scripts/train_baseline_logistic.py |   4 +-
+ src/config/settings.py             |   7 +-
+ src/splitting/temporal_split.py    |  53 +++++++++++---
+ tests/test_temporal_split.py       | 110 ++++++++++++++++++++++++++++-
+ 10 files changed, 174 insertions(+), 14 deletions(-)
+
+diff --git a/scripts/analisis_wholesale.py b/scripts/analisis_wholesale.py
+index bc86cf6..c7fefd8 100644
+--- a/scripts/analisis_wholesale.py
++++ b/scripts/analisis_wholesale.py
+@@ -37,6 +37,7 @@ from src.data.loader import load_online_retail
+ from src.data.cleaning import get_clean_sales
+ from src.features.snapshots import build_multi_snapshot_dataset, generate_snapshot_dates
+ from src.splitting.temporal_split import temporal_split
++from src.config.settings import SPLIT_EMBARGO_DAYS
+ from src.models.baseline import NUMERIC_FEATURES
+ from src.models.random_forest import build_random_forest_pipeline
+ from src.evaluation.calibration import calibrate_prefit
+@@ -58,6 +59,7 @@ train, valid, test = temporal_split(
+     date_col="cutoff_date",
+     train_end=snapshot_dates[12],
+     valid_end=snapshot_dates[16],
++    gap_days=SPLIT_EMBARGO_DAYS,
+ )
+ 
+ print("=" * 70)
+diff --git a/scripts/analyze_shap.py b/scripts/analyze_shap.py
+index 8ceecf2..94e5562 100644
+--- a/scripts/analyze_shap.py
++++ b/scripts/analyze_shap.py
+@@ -38,6 +38,7 @@ from src.data.loader import load_online_retail
+ from src.data.cleaning import get_clean_sales
+ from src.features.snapshots import build_multi_snapshot_dataset, generate_snapshot_dates
+ from src.splitting.temporal_split import temporal_split
++from src.config.settings import SPLIT_EMBARGO_DAYS
+ from src.models.baseline import NUMERIC_FEATURES
+ from src.models.random_forest import build_random_forest_pipeline
+ from src.evaluation.calibration import calibrate_prefit
+@@ -71,6 +72,7 @@ train, valid, test = temporal_split(
+     date_col="cutoff_date",
+     train_end=snapshot_dates[12],
+     valid_end=snapshot_dates[16],
++    gap_days=SPLIT_EMBARGO_DAYS,
+ )
+ for name, split in (("train", train), ("valid", valid), ("test", test)):
+     print(
+diff --git a/scripts/control_cv_shuffle.py b/scripts/control_cv_shuffle.py
+index cc19aea..6b4b32a 100644
+--- a/scripts/control_cv_shuffle.py
++++ b/scripts/control_cv_shuffle.py
+@@ -31,6 +31,7 @@ from src.data.loader import load_online_retail
+ from src.data.cleaning import get_clean_sales
+ from src.features.snapshots import build_multi_snapshot_dataset, generate_snapshot_dates
+ from src.splitting.temporal_split import temporal_split
++from src.config.settings import SPLIT_EMBARGO_DAYS
+ from src.models.baseline import NUMERIC_FEATURES
+ from src.models.xgboost_model import build_xgboost_pipeline, compute_scale_pos_weight
+ 
+@@ -50,6 +51,7 @@ train, valid, _ = temporal_split(
+     date_col="cutoff_date",
+     train_end=snapshot_dates[12],
+     valid_end=snapshot_dates[16],
++    gap_days=SPLIT_EMBARGO_DAYS,
+ )
+ X_train, y_train = train[NUMERIC_FEATURES], train["churn"].values
+ X_valid, y_valid = valid[NUMERIC_FEATURES], valid["churn"].values
+diff --git a/scripts/diagnostico_xgboost.py b/scripts/diagnostico_xgboost.py
+index 8fef62f..6a363fb 100644
+--- a/scripts/diagnostico_xgboost.py
++++ b/scripts/diagnostico_xgboost.py
+@@ -23,6 +23,7 @@ from src.features.snapshots import (
+     generate_snapshot_dates,
+ )
+ from src.splitting.temporal_split import temporal_split
++from src.config.settings import SPLIT_EMBARGO_DAYS
+ from src.models.baseline import NUMERIC_FEATURES
+ from src.models.xgboost_model import (
+     build_xgboost_pipeline,
+@@ -42,6 +43,7 @@ train, valid, test = temporal_split(
+     date_col="cutoff_date",
+     train_end=snapshot_dates[12],
+     valid_end=snapshot_dates[16],
++    gap_days=SPLIT_EMBARGO_DAYS,
+ )
+ 
+ pipe_xgb = build_xgboost_pipeline(
+diff --git a/scripts/evaluate_thresholds.py b/scripts/evaluate_thresholds.py
+index 2e3ada1..8719d7a 100644
+--- a/scripts/evaluate_thresholds.py
++++ b/scripts/evaluate_thresholds.py
+@@ -10,6 +10,7 @@ from src.data.loader import load_online_retail
+ from src.data.cleaning import get_clean_sales
+ from src.features.snapshots import build_multi_snapshot_dataset, generate_snapshot_dates
+ from src.splitting.temporal_split import temporal_split
++from src.config.settings import SPLIT_EMBARGO_DAYS
+ from src.models.baseline import NUMERIC_FEATURES
+ from src.models.logistic import build_logistic_pipeline
+ from src.models.random_forest import build_random_forest_pipeline
+@@ -40,6 +41,7 @@ train, valid, test = temporal_split(
+     date_col="cutoff_date",
+     train_end=snapshot_dates[12],
+     valid_end=snapshot_dates[16],
++    gap_days=SPLIT_EMBARGO_DAYS,
+ )
+ splits = {"valid": valid, "test": test}
+ y_valid = valid["churn"].values
+diff --git a/scripts/train_all_models.py b/scripts/train_all_models.py
+index 6a1d326..175d74a 100644
+--- a/scripts/train_all_models.py
++++ b/scripts/train_all_models.py
+@@ -19,6 +19,7 @@ from src.data.loader import load_online_retail
+ from src.data.cleaning import get_clean_sales
+ from src.features.snapshots import generate_snapshot_dates, build_multi_snapshot_dataset
+ from src.splitting.temporal_split import temporal_split
++from src.config.settings import SPLIT_EMBARGO_DAYS
+ from src.models.baseline import build_dummy_pipeline, NUMERIC_FEATURES
+ from src.models.logistic import build_logistic_pipeline
+ from src.evaluation.metrics import evaluate_binary
+@@ -35,7 +36,8 @@ dataset = build_multi_snapshot_dataset(
+ train_end = snapshot_dates[12]
+ valid_end = snapshot_dates[16]
+ train, valid, test = temporal_split(
+-    dataset, date_col="cutoff_date", train_end=train_end, valid_end=valid_end
++    dataset, date_col="cutoff_date", train_end=train_end, valid_end=valid_end,
++    gap_days=SPLIT_EMBARGO_DAYS,
+ )
+ 
+ xgb_weight = compute_scale_pos_weight(train["churn"])
+diff --git a/scripts/train_baseline_logistic.py b/scripts/train_baseline_logistic.py
+index 6b37ffd..4c42aec 100644
+--- a/scripts/train_baseline_logistic.py
++++ b/scripts/train_baseline_logistic.py
+@@ -17,6 +17,7 @@ from src.data.loader import load_online_retail
+ from src.data.cleaning import get_clean_sales
+ from src.features.snapshots import generate_snapshot_dates, build_multi_snapshot_dataset
+ from src.splitting.temporal_split import temporal_split
++from src.config.settings import SPLIT_EMBARGO_DAYS
+ from src.models.baseline import build_dummy_pipeline, NUMERIC_FEATURES
+ from src.models.logistic import build_logistic_pipeline
+ from src.evaluation.metrics import evaluate_binary
+@@ -33,7 +34,8 @@ dataset = build_multi_snapshot_dataset(
+ train_end = snapshot_dates[12]
+ valid_end = snapshot_dates[16]
+ train, valid, test = temporal_split(
+-    dataset, date_col="cutoff_date", train_end=train_end, valid_end=valid_end
++    dataset, date_col="cutoff_date", train_end=train_end, valid_end=valid_end,
++    gap_days=SPLIT_EMBARGO_DAYS,
+ )
+ 
+ models = {
+diff --git a/src/config/settings.py b/src/config/settings.py
+index 9636ba1..1b04c3b 100644
+--- a/src/config/settings.py
++++ b/src/config/settings.py
+@@ -31,4 +31,9 @@ EXPECTED_COLUMNS = {
+ }
+ 
+ # Horizontes de churn a evaluar (en días)
+-CHURN_HORIZONS = [60, 90, 120]
+\ No newline at end of file
++CHURN_HORIZONS = [60, 90, 120]
++
++# Embargo entre splits temporales (en días). Debe ser >= al horizonte de
++# churn usado en las etiquetas, para que la ventana de etiqueta de un split
++# no solape con el periodo del siguiente.
++SPLIT_EMBARGO_DAYS = 90
+diff --git a/src/splitting/temporal_split.py b/src/splitting/temporal_split.py
+index c0494a8..2c4b027 100644
+--- a/src/splitting/temporal_split.py
++++ b/src/splitting/temporal_split.py
+@@ -4,12 +4,20 @@ src/splitting/temporal_split.py
+ Split temporal del dataset cliente+snapshot: train, validation y test
+ se definen por fecha de snapshot (cutoff_date), nunca de forma aleatoria.
+ 
++Embargo (gap_days): la etiqueta de una fila con corte T se calcula con las
++compras de (T, T + horizon]. Si el siguiente split empieza antes de
++T + horizon, la etiqueta de la fila de train se apoya en compras que caen
++dentro del periodo del split siguiente (solapamiento de ventanas de
++etiqueta). Para evitarlo, `gap_days` (normalmente igual al horizonte de
++churn) descarta los snapshots que caen dentro de ese margen tras
++train_end y tras valid_end. Con gap_days=0 se conserva el comportamiento
++anterior, que sí presenta ese solapamiento.
++
+ Limitación conocida y documentada: un mismo Customer ID puede aparecer
+-en varios snapshots (y por tanto en más de un split). Esto no constituye
+-leakage temporal -- cada fila usa solo pasado en X y solo futuro en y,
+-respetando su propio cutoff_date -- pero introduce dependencia entre
+-observaciones del mismo cliente, que debe mencionarse como limitación
+-metodológica en el TFM.
++en varios snapshots (y por tanto en más de un split). Las features de cada
++fila usan solo pasado y su etiqueta solo futuro respecto a su propio
++cutoff_date, pero introduce dependencia entre observaciones del mismo
++cliente, que debe mencionarse como limitación metodológica en el TFM.
+ """
+ 
+ from __future__ import annotations
+@@ -22,22 +30,47 @@ def temporal_split(
+     date_col: str,
+     train_end: pd.Timestamp,
+     valid_end: pd.Timestamp,
++    gap_days: int = 0,
+ ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+     """
+-    Divide el dataset en train/valid/test según cutoff_date.
++    Divide el dataset en train/valid/test según cutoff_date, con un
++    embargo opcional de `gap_days` entre splits.
+ 
+     - train: date_col <= train_end
+-    - valid: train_end < date_col <= valid_end
+-    - test:  date_col > valid_end
++    - valid: date_col > train_end  y  date_col >= train_end + gap_days
++             y  date_col <= valid_end
++    - test:  date_col > valid_end  y  date_col >= valid_end + gap_days
++
++    Las filas cuyo corte cae dentro de cada embargo no se asignan a ningún
++    split. Con gap_days >= horizon_days, la etiqueta de cada fila de un
++    split (ventana (T, T + horizon]) queda totalmente antes del primer
++    corte del split siguiente: un corte situado exactamente en
++    T + horizon se conserva, porque las ventanas son disjuntas.
+     """
++    if gap_days < 0:
++        raise ValueError("gap_days no puede ser negativo.")
+     if train_end >= valid_end:
+         raise ValueError("train_end debe ser anterior a valid_end.")
+ 
++    gap = pd.Timedelta(days=gap_days)
++    valid_start = train_end + gap
++    test_start = valid_end + gap
++
++    if valid_start > valid_end:
++        raise ValueError(
++            "gap_days es demasiado grande: el embargo tras train_end "
++            "deja valid vacío (train_end + gap_days > valid_end)."
++        )
++
+     train = dataset[dataset[date_col] <= train_end].copy()
+     valid = dataset[
+-        (dataset[date_col] > train_end) & (dataset[date_col] <= valid_end)
++        (dataset[date_col] > train_end)
++        & (dataset[date_col] >= valid_start)
++        & (dataset[date_col] <= valid_end)
++    ].copy()
++    test = dataset[
++        (dataset[date_col] > valid_end) & (dataset[date_col] >= test_start)
+     ].copy()
+-    test = dataset[dataset[date_col] > valid_end].copy()
+ 
+     return train, valid, test
+ 
+diff --git a/tests/test_temporal_split.py b/tests/test_temporal_split.py
+index 9a3cd53..8bb54d0 100644
+--- a/tests/test_temporal_split.py
++++ b/tests/test_temporal_split.py
+@@ -83,4 +83,112 @@ def test_summarize_split_returns_one_row_per_split(sample_dataset):
+         valid_end=pd.Timestamp("2011-03-01"),
+     )
+     summary = summarize_split(train, valid, test)
+-    assert list(summary["split"]) == ["train", "valid", "test"]
+\ No newline at end of file
++    assert list(summary["split"]) == ["train", "valid", "test"]
++
++
++# ---------------------------------------------------------------------------
++# Embargo (gap_days)
++# ---------------------------------------------------------------------------
++
++HORIZON = 90
++
++
++@pytest.fixture
++def monthly_dataset():
++    """Snapshots mensuales de 2011-01-01 a 2011-12-01, dos clientes por corte."""
++    dates = pd.date_range("2011-01-01", "2011-12-01", freq="MS")
++    return pd.DataFrame(
++        {
++            "Customer ID": [c for _ in dates for c in (1, 2)],
++            "cutoff_date": [d for d in dates for _ in (1, 2)],
++            "recency": 1,
++            "churn": 0,
++        }
++    )
++
++
++def _split(dataset, gap_days):
++    return temporal_split(
++        dataset,
++        date_col="cutoff_date",
++        train_end=pd.Timestamp("2011-03-01"),
++        valid_end=pd.Timestamp("2011-08-01"),
++        gap_days=gap_days,
++    )
++
++
++def test_gap_zero_keeps_previous_behaviour(monthly_dataset):
++    default = temporal_split(
++        monthly_dataset,
++        date_col="cutoff_date",
++        train_end=pd.Timestamp("2011-03-01"),
++        valid_end=pd.Timestamp("2011-08-01"),
++    )
++    explicit = _split(monthly_dataset, gap_days=0)
++    for a, b in zip(default, explicit):
++        pd.testing.assert_frame_equal(a, b)
++    assert sum(len(s) for s in explicit) == len(monthly_dataset)
++
++
++def test_gap_drops_snapshots_inside_embargo(monthly_dataset):
++    train, valid, test = _split(monthly_dataset, gap_days=HORIZON)
++    # train_end + 90 d = 2011-05-30 -> valid empieza en el corte 2011-06-01
++    assert train["cutoff_date"].max() == pd.Timestamp("2011-03-01")
++    assert valid["cutoff_date"].min() == pd.Timestamp("2011-06-01")
++    assert valid["cutoff_date"].max() == pd.Timestamp("2011-08-01")
++    # valid_end + 90 d = 2011-10-30 -> test empieza en el corte 2011-11-01
++    assert test["cutoff_date"].min() == pd.Timestamp("2011-11-01")
++    # Se descartan los cortes de abril, mayo, septiembre y octubre (2 filas c/u)
++    assert len(train) + len(valid) + len(test) == len(monthly_dataset) - 8
++
++
++def test_label_windows_do_not_overlap_between_splits(monthly_dataset):
++    """
++    La etiqueta de un corte T mira a (T, T + HORIZON]. El primer corte del
++    split siguiente debe quedar fuera de esa ventana.
++    """
++    train, valid, test = _split(monthly_dataset, gap_days=HORIZON)
++    horizon = pd.Timedelta(days=HORIZON)
++    assert valid["cutoff_date"].min() >= train["cutoff_date"].max() + horizon
++    assert test["cutoff_date"].min() >= valid["cutoff_date"].max() + horizon
++
++
++def test_cutoff_exactly_at_horizon_is_kept():
++    """2011-01-01 + 90 d = 2011-04-01: ventanas disjuntas, no se descarta."""
++    dataset = pd.DataFrame(
++        {
++            "Customer ID": [1, 1, 1, 1],
++            "cutoff_date": pd.to_datetime(
++                ["2011-01-01", "2011-03-01", "2011-04-01", "2011-07-01"]
++            ),
++            "churn": [0, 0, 0, 0],
++        }
++    )
++    train, valid, test = temporal_split(
++        dataset,
++        date_col="cutoff_date",
++        train_end=pd.Timestamp("2011-01-01"),
++        valid_end=pd.Timestamp("2011-04-01"),
++        gap_days=HORIZON,
++    )
++    assert list(train["cutoff_date"]) == [pd.Timestamp("2011-01-01")]
++    assert list(valid["cutoff_date"]) == [pd.Timestamp("2011-04-01")]
++    assert list(test["cutoff_date"]) == [pd.Timestamp("2011-07-01")]
++
++
++def test_without_gap_label_windows_do_overlap(monthly_dataset):
++    """Documenta el problema que corrige el embargo."""
++    train, valid, _ = _split(monthly_dataset, gap_days=0)
++    horizon = pd.Timedelta(days=HORIZON)
++    assert valid["cutoff_date"].min() <= train["cutoff_date"].max() + horizon
++
++
++def test_negative_gap_raises_error(monthly_dataset):
++    with pytest.raises(ValueError):
++        _split(monthly_dataset, gap_days=-1)
++
++
++def test_gap_too_large_for_valid_window_raises_error(monthly_dataset):
++    # train_end + 200 d queda después de valid_end -> valid vacío
++    with pytest.raises(ValueError):
++        _split(monthly_dataset, gap_days=200)
+\ No newline at end of file
+-- 
+2.43.0
+
